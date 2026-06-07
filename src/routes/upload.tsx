@@ -10,6 +10,7 @@ import { parseCourierExcel } from "@/lib/excel";
 import { supabase } from "@/integrations/supabase/client";
 import { useDeleteReport, useReports } from "@/lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
+import type { Json } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/upload")({
   head: () => ({
@@ -43,7 +44,11 @@ function UploadPage() {
         .single();
       if (error) throw error;
 
-      const payload = rows.map((r) => ({ ...r, report_id: report.id, raw: r.raw }));
+      const payload = rows.map((r) => ({
+        ...r,
+        report_id: report.id,
+        raw: r.raw as Json,
+      }));
       // insert in chunks to stay within limits
       for (let i = 0; i < payload.length; i += 500) {
         const chunk = payload.slice(i, i + 500);
