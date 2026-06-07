@@ -85,6 +85,35 @@ export type Database = {
           },
         ]
       }
+      cities: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          zone_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          zone_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cities_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           code: string
@@ -199,6 +228,86 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "dockets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotation_rates: {
+        Row: {
+          available: boolean
+          created_at: string
+          id: string
+          max_weight_g: number | null
+          min_weight_g: number
+          quotation_id: string
+          rate: number
+          rate_unit: string
+          zone_id: string
+        }
+        Insert: {
+          available?: boolean
+          created_at?: string
+          id?: string
+          max_weight_g?: number | null
+          min_weight_g?: number
+          quotation_id: string
+          rate?: number
+          rate_unit?: string
+          zone_id: string
+        }
+        Update: {
+          available?: boolean
+          created_at?: string
+          id?: string
+          max_weight_g?: number | null
+          min_weight_g?: number
+          quotation_id?: string
+          rate?: number
+          rate_unit?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_rates_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotation_rates_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotations: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          mode: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          mode?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          mode?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotations_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
