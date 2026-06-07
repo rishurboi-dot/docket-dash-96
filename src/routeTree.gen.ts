@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ZonesRouteImport } from './routes/zones'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as ScanRouteImport } from './routes/scan'
+import { Route as RatesRouteImport } from './routes/rates'
 import { Route as CompaniesRouteImport } from './routes/companies'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -30,6 +31,11 @@ const ScanRoute = ScanRouteImport.update({
   path: '/scan',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RatesRoute = RatesRouteImport.update({
+  id: '/rates',
+  path: '/rates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CompaniesRoute = CompaniesRouteImport.update({
   id: '/companies',
   path: '/companies',
@@ -44,6 +50,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/companies': typeof CompaniesRoute
+  '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
   '/upload': typeof UploadRoute
   '/zones': typeof ZonesRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/companies': typeof CompaniesRoute
+  '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
   '/upload': typeof UploadRoute
   '/zones': typeof ZonesRoute
@@ -59,21 +67,30 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/companies': typeof CompaniesRoute
+  '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
   '/upload': typeof UploadRoute
   '/zones': typeof ZonesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/companies' | '/scan' | '/upload' | '/zones'
+  fullPaths: '/' | '/companies' | '/rates' | '/scan' | '/upload' | '/zones'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/companies' | '/scan' | '/upload' | '/zones'
-  id: '__root__' | '/' | '/companies' | '/scan' | '/upload' | '/zones'
+  to: '/' | '/companies' | '/rates' | '/scan' | '/upload' | '/zones'
+  id:
+    | '__root__'
+    | '/'
+    | '/companies'
+    | '/rates'
+    | '/scan'
+    | '/upload'
+    | '/zones'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CompaniesRoute: typeof CompaniesRoute
+  RatesRoute: typeof RatesRoute
   ScanRoute: typeof ScanRoute
   UploadRoute: typeof UploadRoute
   ZonesRoute: typeof ZonesRoute
@@ -102,6 +119,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rates': {
+      id: '/rates'
+      path: '/rates'
+      fullPath: '/rates'
+      preLoaderRoute: typeof RatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/companies': {
       id: '/companies'
       path: '/companies'
@@ -122,6 +146,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CompaniesRoute: CompaniesRoute,
+  RatesRoute: RatesRoute,
   ScanRoute: ScanRoute,
   UploadRoute: UploadRoute,
   ZonesRoute: ZonesRoute,
