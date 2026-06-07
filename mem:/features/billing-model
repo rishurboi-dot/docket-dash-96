@@ -1,0 +1,16 @@
+---
+name: Billing data model and engine
+description: Schema and logic for quotations, slab rates, zone detection and billing
+type: feature
+---
+Tables:
+- zones (NCR/Regional/Metro/Special/ROI; ROI code='ROI' is default fallback)
+- cities (name unique lower, zone_id) — drives automatic zone detection from receiver city
+- quotations (company_id, mode, unique(company_id,mode))
+- quotation_rates (quotation_id, zone_id, min_weight_g, max_weight_g nullable, rate, rate_unit, available)
+
+rate_unit values: 'flat' (fixed for slab), 'per_kg' (rate*kg), 'add_per_500g' (base flat slab rate + ceil((g-min)/500)*rate).
+Engine in src/lib/billing.ts: detectZone(city,cities,zones) and calcSlabCharge(rates, weightKg) -> {available, amount, label}.
+Billing page (src/routes/billing.tsx): pick company + date range, match scanned dockets to report documentNo, auto-detect zone, compute amount per matched shipment, zone/mode breakdowns, Excel + PDF export.
+Old rate_cards table/route removed from UI (table still exists, unused).
+Pending/not yet built: dedicated Reports pages (daily/weekly/monthly/zone/revenue), global search, user roles + login, keyboard shortcuts.
