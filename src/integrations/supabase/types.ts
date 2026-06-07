@@ -14,7 +14,273 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      billing_records: {
+        Row: {
+          charge: number
+          company_id: string | null
+          created_at: string
+          docket_number: string
+          id: string
+          mode: string | null
+          rate_card_id: string | null
+          report_id: string | null
+          status: string
+          weight: number | null
+          zone_id: string | null
+        }
+        Insert: {
+          charge?: number
+          company_id?: string | null
+          created_at?: string
+          docket_number: string
+          id?: string
+          mode?: string | null
+          rate_card_id?: string | null
+          report_id?: string | null
+          status?: string
+          weight?: number | null
+          zone_id?: string | null
+        }
+        Update: {
+          charge?: number
+          company_id?: string | null
+          created_at?: string
+          docket_number?: string
+          id?: string
+          mode?: string | null
+          rate_card_id?: string | null
+          report_id?: string | null
+          status?: string
+          weight?: number | null
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_records_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_records_rate_card_id_fkey"
+            columns: ["rate_card_id"]
+            isOneToOne: false
+            referencedRelation: "rate_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_records_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "courier_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_records_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          code: string
+          contact_email: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      courier_report_rows: {
+        Row: {
+          created_at: string
+          destination: string | null
+          docket_number: string
+          id: string
+          mode: string | null
+          raw: Json | null
+          report_id: string
+          weight: number | null
+          zone_code: string | null
+        }
+        Insert: {
+          created_at?: string
+          destination?: string | null
+          docket_number: string
+          id?: string
+          mode?: string | null
+          raw?: Json | null
+          report_id: string
+          weight?: number | null
+          zone_code?: string | null
+        }
+        Update: {
+          created_at?: string
+          destination?: string | null
+          docket_number?: string
+          id?: string
+          mode?: string | null
+          raw?: Json | null
+          report_id?: string
+          weight?: number | null
+          zone_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courier_report_rows_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "courier_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courier_reports: {
+        Row: {
+          id: string
+          name: string
+          row_count: number
+          uploaded_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          row_count?: number
+          uploaded_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          row_count?: number
+          uploaded_at?: string
+        }
+        Relationships: []
+      }
+      dockets: {
+        Row: {
+          company_id: string | null
+          docket_number: string
+          id: string
+          scanned_at: string
+          status: string
+        }
+        Insert: {
+          company_id?: string | null
+          docket_number: string
+          id?: string
+          scanned_at?: string
+          status?: string
+        }
+        Update: {
+          company_id?: string | null
+          docket_number?: string
+          id?: string
+          scanned_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dockets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rate_cards: {
+        Row: {
+          base_charge: number
+          company_id: string
+          created_at: string
+          id: string
+          mode: string
+          per_kg_charge: number
+          weight_from: number
+          weight_to: number
+          zone_id: string
+        }
+        Insert: {
+          base_charge?: number
+          company_id: string
+          created_at?: string
+          id?: string
+          mode?: string
+          per_kg_charge?: number
+          weight_from?: number
+          weight_to?: number
+          zone_id: string
+        }
+        Update: {
+          base_charge?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          mode?: string
+          per_kg_charge?: number
+          weight_from?: number
+          weight_to?: number
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rate_cards_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rate_cards_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zones: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
