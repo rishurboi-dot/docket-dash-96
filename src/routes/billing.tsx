@@ -1,19 +1,31 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Download, Receipt, Save, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Download,
+  FileText,
+  Package,
+  Receipt,
+  Save,
+  Scale,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { StatCard } from "@/components/StatCard";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -24,19 +36,20 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { exportRowsToExcel } from "@/lib/excel";
+import { exportBillingPdf } from "@/lib/pdf";
 import {
-  calcCharge,
-  findRateCard,
+  calcSlabCharge,
+  detectZone,
   formatCurrency,
   normalizeMode,
-  type BillingPreview,
 } from "@/lib/billing";
 import {
   useBillingRecords,
-  useClearBilling,
+  useCities,
   useCompanies,
   useDockets,
-  useRateCards,
+  useQuotationRates,
+  useQuotations,
   useReportRows,
   useSaveBilling,
   useZones,
@@ -45,116 +58,148 @@ import {
 export const Route = createFileRoute("/billing")({
   head: () => ({
     meta: [
-      { title: "Billing — SwiftBill" },
-      { name: "description", content: "Match dockets to courier reports and generate billing." },
+      { title: "Generate Billing — SwiftBill" },
+      { name: "description", content: "Select a company and generate billing for matched dockets automatically." },
     ],
   }),
   component: BillingPage,
 });
 
+interface BillRow {
+  docket_number: string;
+  date: string | null;
+  name: string;
+  place: string;
+  zone_id: string | null;
+  zone_name: string;
+  mode: string;
+  weight: number;
+  amount: number;
+  available: boolean;
+}
+
+function rawField(raw: unknown, key: string): string {
+  if (raw && typeof raw === "object" && key in (raw as Record<string, unknown>)) {
+    const v = (raw as Record<string, unknown>)[key];
+    return v == null ? "" : String(v);
+  }
+  return "";
+}
+
 function BillingPage() {
   const dockets = useDockets();
   const reportRows = useReportRows();
   const zones = useZones();
+  const cities = useCities();
   const companies = useCompanies();
-  const rates = useRateCards();
+  const quotations = useQuotations();
+  const rates = useQuotationRates();
   const billing = useBillingRecords();
   const saveBilling = useSaveBilling();
-  const clearBilling = useClearBilling();
   const qc = useQueryClient();
+
+  const [companyId, setCompanyId] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const preview = useMemo<BillingPreview[]>(() => {
+  const company = companies.data?.find((c) => c.id === companyId) ?? null;
+
+  const billRows = useMemo<BillRow[]>(() => {
+    if (!companyId) return [];
     const rows = reportRows.data ?? [];
     const zoneList = zones.data ?? [];
+    const cityList = cities.data ?? [];
     const rateList = rates.data ?? [];
-    const companyList = companies.data ?? [];
-    // last report row per docket number
+    const quotes = (quotations.data ?? []).filter((q) => q.company_id === companyId);
+
     const rowByDocket = new Map<string, (typeof rows)[number]>();
-    for (const r of rows) rowByDocket.set(r.docket_number, r);
+    for (const r of rows) rowByDocket.set(r.docket_number.trim(), r);
 
-    return (dockets.data ?? []).map((d) => {
-      const company = companyList.find((c) => c.id === d.company_id) ?? null;
-      const row = rowByDocket.get(d.docket_number);
-      const base: BillingPreview = {
+    const fromTs = from ? new Date(from).getTime() : null;
+    const toTs = to ? new Date(to).getTime() + 86_400_000 - 1 : null;
+
+    const out: BillRow[] = [];
+    for (const d of dockets.data ?? []) {
+      const row = rowByDocket.get(d.docket_number.trim());
+      if (!row) continue; // unmatched -> ignored
+      const bookingRaw = rawField(row.raw, "bookingDate");
+      const bookingTs = bookingRaw ? new Date(bookingRaw).getTime() : null;
+      if (fromTs != null && bookingTs != null && bookingTs < fromTs) continue;
+      if (toTs != null && bookingTs != null && bookingTs > toTs) continue;
+
+      const mode = normalizeMode(row.mode);
+      const place = row.destination ?? rawField(row.raw, "receiverCity");
+      const zone = detectZone(place, cityList, zoneList);
+      const weight = Number(row.weight ?? 0);
+      const quote = quotes.find((q) => q.mode === mode);
+      const zoneRates = quote
+        ? rateList.filter((r) => r.quotation_id === quote.id && r.zone_id === zone.zoneId)
+        : [];
+      const result = calcSlabCharge(zoneRates, weight);
+      out.push({
         docket_number: d.docket_number,
-        company_id: d.company_id,
-        company_name: company?.name ?? "—",
-        zone_id: null,
-        zone_name: "—",
-        mode: "—",
-        weight: null,
-        charge: 0,
-        rate_card_id: null,
-        report_id: null,
-        matched: false,
-        reason: "No matching report row",
-      };
-      if (!row) return base;
-      base.report_id = row.report_id;
-      base.weight = row.weight ?? null;
-      base.mode = normalizeMode(row.mode);
-      const zone = zoneList.find(
-        (z) => z.code.toLowerCase() === (row.zone_code ?? "").toLowerCase(),
-      );
-      base.zone_id = zone?.id ?? null;
-      base.zone_name = zone?.name ?? row.zone_code ?? row.destination ?? "—";
-      if (!company) {
-        base.reason = "Docket has no company assigned";
-        return base;
-      }
-      const card = findRateCard(
-        rateList.filter((c) => c.company_id === company.id),
-        { zoneId: zone?.id ?? null, mode: row.mode, weight: row.weight },
-      );
-      if (!card) {
-        base.reason = zone
-          ? "No rate card for this zone/mode"
-          : "No rate card for this mode/weight";
-        return base;
-      }
-      // If zone was unknown, adopt the matched card's zone for reporting.
-      if (!zone && card.zone_id) {
-        const cardZone = zoneList.find((z) => z.id === card.zone_id);
-        base.zone_id = card.zone_id;
-        base.zone_name = cardZone?.name ?? base.zone_name;
-      }
-      base.rate_card_id = card.id;
-      base.charge = calcCharge(card, row.weight);
-      base.matched = true;
-      base.reason = "Matched";
-      return base;
-    });
-  }, [dockets.data, reportRows.data, zones.data, companies.data, rates.data]);
+        date: bookingRaw || null,
+        name: rawField(row.raw, "receiverName"),
+        place,
+        zone_id: zone.zoneId,
+        zone_name: zone.zoneName,
+        mode,
+        weight,
+        amount: result.amount,
+        available: result.available,
+      });
+    }
+    return out;
+  }, [companyId, dockets.data, reportRows.data, zones.data, cities.data, rates.data, quotations.data, from, to]);
 
-  const matched = preview.filter((p) => p.matched);
-  const total = matched.reduce((s, p) => s + p.charge, 0);
-  const [showUnmatched, setShowUnmatched] = useState(false);
-  const visiblePreview = showUnmatched ? preview : matched;
+  const billable = billRows.filter((r) => r.available);
+  const totalWeight = billRows.reduce((s, r) => s + r.weight, 0);
+  const totalAmount = billable.reduce((s, r) => s + r.amount, 0);
+
+  const zoneBreakdown = useMemo(() => {
+    const m = new Map<string, { count: number; amount: number }>();
+    for (const r of billable) {
+      const e = m.get(r.zone_name) ?? { count: 0, amount: 0 };
+      e.count += 1;
+      e.amount += r.amount;
+      m.set(r.zone_name, e);
+    }
+    return [...m.entries()];
+  }, [billable]);
+
+  const modeBreakdown = useMemo(() => {
+    const m = new Map<string, { count: number; amount: number }>();
+    for (const r of billable) {
+      const e = m.get(r.mode) ?? { count: 0, amount: 0 };
+      e.count += 1;
+      e.amount += r.amount;
+      m.set(r.mode, e);
+    }
+    return [...m.entries()];
+  }, [billable]);
 
   const generate = async () => {
-    if (!matched.length) {
-      toast.error("No matched dockets to bill.");
-      return;
-    }
+    if (!companyId) return toast.error("Select a company first.");
+    if (!billable.length) return toast.error("No billable matched shipments.");
     setSaving(true);
     try {
       await saveBilling.mutateAsync(
-        matched.map((p) => ({
-          docket_number: p.docket_number,
-          company_id: p.company_id,
-          zone_id: p.zone_id,
-          mode: p.mode,
-          weight: p.weight,
-          charge: p.charge,
-          rate_card_id: p.rate_card_id,
-          report_id: p.report_id,
+        billable.map((r) => ({
+          docket_number: r.docket_number,
+          company_id: companyId,
+          zone_id: r.zone_id,
+          mode: r.mode,
+          weight: r.weight,
+          charge: r.amount,
         })),
       );
-      const numbers = matched.map((p) => p.docket_number);
-      await supabase.from("dockets").update({ status: "billed" }).in("docket_number", numbers);
+      await supabase
+        .from("dockets")
+        .update({ status: "billed" })
+        .in("docket_number", billable.map((r) => r.docket_number));
       qc.invalidateQueries({ queryKey: ["dockets"] });
-      toast.success(`Generated billing for ${matched.length} dockets`);
+      toast.success(`Billing generated for ${billable.length} shipments`);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -162,108 +207,130 @@ function BillingPage() {
     }
   };
 
-  const exportPreview = () => {
+  const exportExcel = () => {
     exportRowsToExcel(
-      preview.map((p) => ({
-        Docket: p.docket_number,
-        Company: p.company_name,
-        Zone: p.zone_name,
-        Mode: p.mode,
-        "Weight (kg)": p.weight ?? "",
-        Charge: p.charge,
-        Status: p.matched ? "Matched" : "Unmatched",
-        Note: p.reason,
-      })),
-      `billing-preview-${new Date().toISOString().slice(0, 10)}.xlsx`,
-    );
-  };
-
-  const exportSaved = () => {
-    const records = billing.data ?? [];
-    exportRowsToExcel(
-      records.map((r) => ({
+      billRows.map((r, i) => ({
+        "S.No": i + 1,
+        Date: r.date ? new Date(r.date).toLocaleDateString() : "",
         Docket: r.docket_number,
-        Company: companies.data?.find((c) => c.id === r.company_id)?.name ?? "",
-        Zone: zones.data?.find((z) => z.id === r.zone_id)?.name ?? "",
-        Mode: r.mode ?? "",
-        "Weight (kg)": r.weight ?? "",
-        Charge: Number(r.charge),
-        "Billed at": new Date(r.created_at).toLocaleString(),
+        Name: r.name,
+        Place: r.place,
+        Zone: r.zone_name,
+        "Weight (kg)": r.weight,
+        Mode: r.mode,
+        Amount: r.available ? r.amount : "NOT AVAILABLE",
       })),
-      `billing-report-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      `billing-${company?.name ?? "company"}-${new Date().toISOString().slice(0, 10)}.xlsx`,
     );
   };
 
-  const savedTotal = (billing.data ?? []).reduce((s, r) => s + Number(r.charge), 0);
+  const exportPdf = () => {
+    exportBillingPdf({
+      companyName: company?.name ?? "—",
+      dateRange: from || to ? `${from || "…"} to ${to || "…"}` : "All dates",
+      rows: billRows,
+      totalShipments: billRows.length,
+      totalWeight,
+      totalAmount,
+    });
+  };
 
   return (
     <AppLayout
-      title="Billing"
-      description="Match scanned dockets against uploaded reports and generate charges."
+      title="Generate Billing"
+      description="Select a company, then bill all matched dockets automatically — zones, slabs and amounts are computed for you."
     >
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <StatCard label="Matched" value={matched.length} icon={CheckCircle2} />
-        <StatCard
-          label="Unmatched"
-          value={preview.length - matched.length}
-          icon={XCircle}
-        />
-        <StatCard label="Preview total" value={formatCurrency(total)} icon={Receipt} />
-      </div>
-
-      <Tabs defaultValue="preview">
-        <TabsList>
-          <TabsTrigger value="preview">Preview ({visiblePreview.length})</TabsTrigger>
-          <TabsTrigger value="saved">Saved reports ({billing.data?.length ?? 0})</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="preview" className="mt-4">
-          <div className="mb-3 flex flex-wrap gap-2">
-            <Button onClick={generate} disabled={saving || !matched.length}>
-              <Save className="mr-1 h-4 w-4" /> Generate billing
-            </Button>
-            <Button variant="outline" onClick={exportPreview} disabled={!preview.length}>
-              <Download className="mr-1 h-4 w-4" /> Export preview
-            </Button>
-            <Button
-              variant="ghost"
-              className="ml-auto"
-              onClick={() => setShowUnmatched((v) => !v)}
-            >
-              {showUnmatched ? "Hide unmatched" : `Show unmatched (${preview.length - matched.length})`}
+      <Card className="mb-6 p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="lg:col-span-1">
+            <Label>Company</Label>
+            <Select value={companyId} onValueChange={setCompanyId}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select company" />
+              </SelectTrigger>
+              <SelectContent>
+                {companies.data?.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>From date</Label>
+            <Input type="date" className="mt-1" value={from} onChange={(e) => setFrom(e.target.value)} />
+          </div>
+          <div>
+            <Label>To date</Label>
+            <Input type="date" className="mt-1" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+          <div className="flex items-end">
+            <Button className="w-full" size="lg" onClick={generate} disabled={saving || !billable.length}>
+              <Save className="mr-1 h-4 w-4" /> Generate Billing
             </Button>
           </div>
+        </div>
+      </Card>
+
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Matched shipments" value={billRows.length} icon={CheckCircle2} />
+        <StatCard label="Not available" value={billRows.length - billable.length} icon={XCircle} />
+        <StatCard label="Total weight" value={`${totalWeight.toFixed(2)} kg`} icon={Scale} />
+        <StatCard label="Total amount" value={formatCurrency(totalAmount)} icon={Receipt} />
+      </div>
+
+      {!companyId ? (
+        <Card className="px-5 py-16 text-center text-sm text-muted-foreground" style={{ boxShadow: "var(--shadow-card)" }}>
+          <Package className="mx-auto mb-3 h-8 w-8 opacity-50" />
+          Select a company above to preview and generate billing.
+        </Card>
+      ) : (
+        <>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <Button variant="outline" onClick={exportExcel} disabled={!billRows.length}>
+              <Download className="mr-1 h-4 w-4" /> Export Excel
+            </Button>
+            <Button variant="outline" onClick={exportPdf} disabled={!billRows.length}>
+              <FileText className="mr-1 h-4 w-4" /> Export PDF
+            </Button>
+          </div>
+
           <Card style={{ boxShadow: "var(--shadow-card)" }}>
-            {visiblePreview.length ? (
+            {billRows.length ? (
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">S.No</TableHead>
+                    <TableHead>Date</TableHead>
                     <TableHead>Docket</TableHead>
-                    <TableHead>Company</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Place</TableHead>
                     <TableHead>Zone</TableHead>
-                    <TableHead>Mode</TableHead>
                     <TableHead className="text-right">Weight</TableHead>
-                    <TableHead className="text-right">Charge</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Mode</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {visiblePreview.map((p) => (
-                    <TableRow key={p.docket_number}>
-                      <TableCell className="font-mono text-sm">{p.docket_number}</TableCell>
-                      <TableCell>{p.company_name}</TableCell>
-                      <TableCell>{p.zone_name}</TableCell>
-                      <TableCell>{p.mode}</TableCell>
-                      <TableCell className="text-right">{p.weight ?? "—"}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        {p.matched ? formatCurrency(p.charge) : "—"}
-                      </TableCell>
+                  {billRows.map((r, i) => (
+                    <TableRow key={r.docket_number}>
+                      <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                      <TableCell>{r.date ? new Date(r.date).toLocaleDateString() : "—"}</TableCell>
+                      <TableCell className="font-mono text-sm">{r.docket_number}</TableCell>
+                      <TableCell className="max-w-[160px] truncate">{r.name || "—"}</TableCell>
+                      <TableCell>{r.place || "—"}</TableCell>
                       <TableCell>
-                        {p.matched ? (
-                          <Badge className="bg-success text-success-foreground">Matched</Badge>
+                        <Badge variant="secondary">{r.zone_name}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">{r.weight} kg</TableCell>
+                      <TableCell>{r.mode}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {r.available ? (
+                          formatCurrency(r.amount)
                         ) : (
-                          <Badge variant="outline" title={p.reason}>
-                            {p.reason}
+                          <Badge variant="outline" className="border-destructive/40 text-destructive">
+                            NOT AVAILABLE
                           </Badge>
                         )}
                       </TableCell>
@@ -273,75 +340,43 @@ function BillingPage() {
               </Table>
             ) : (
               <div className="px-5 py-16 text-center text-sm text-muted-foreground">
-                {preview.length
-                  ? "No matched dockets yet. Toggle “Show unmatched” to review what didn't match."
-                  : "Scan dockets and upload a report to see the billing preview."}
+                No matched shipments for this selection. Scan dockets and upload the courier report first.
               </div>
             )}
           </Card>
-        </TabsContent>
 
-        <TabsContent value="saved" className="mt-4">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={exportSaved} disabled={!billing.data?.length}>
-              <Download className="mr-1 h-4 w-4" /> Export report
-            </Button>
-            <Button
-              variant="ghost"
-              className="text-destructive"
-              onClick={() => clearBilling.mutate()}
-              disabled={!billing.data?.length}
-            >
-              Clear all
-            </Button>
-            <span className="ml-auto text-sm font-medium">
-              Total billed: {formatCurrency(savedTotal)}
-            </span>
-          </div>
-          <Card style={{ boxShadow: "var(--shadow-card)" }}>
-            {billing.data?.length ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Docket</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Zone</TableHead>
-                    <TableHead>Mode</TableHead>
-                    <TableHead className="text-right">Weight</TableHead>
-                    <TableHead className="text-right">Charge</TableHead>
-                    <TableHead>Billed at</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {billing.data.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-mono text-sm">{r.docket_number}</TableCell>
-                      <TableCell>
-                        {companies.data?.find((c) => c.id === r.company_id)?.name ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        {zones.data?.find((z) => z.id === r.zone_id)?.name ?? "—"}
-                      </TableCell>
-                      <TableCell>{r.mode ?? "—"}</TableCell>
-                      <TableCell className="text-right">{r.weight ?? "—"}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(Number(r.charge))}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(r.created_at).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
+          {billable.length > 0 && (
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <Card className="p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+                <h3 className="mb-3 font-semibold">Zone breakdown</h3>
+                <div className="space-y-2 text-sm">
+                  {zoneBreakdown.map(([z, e]) => (
+                    <div key={z} className="flex items-center justify-between border-b pb-1.5">
+                      <span>{z} <span className="text-muted-foreground">· {e.count}</span></span>
+                      <span className="font-medium">{formatCurrency(e.amount)}</span>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="px-5 py-16 text-center text-sm text-muted-foreground">
-                No billing reports generated yet.
-              </div>
-            )}
-          </Card>
-        </TabsContent>
-      </Tabs>
+                </div>
+              </Card>
+              <Card className="p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+                <h3 className="mb-3 font-semibold">Mode breakdown</h3>
+                <div className="space-y-2 text-sm">
+                  {modeBreakdown.map(([m, e]) => (
+                    <div key={m} className="flex items-center justify-between border-b pb-1.5">
+                      <span>{m} <span className="text-muted-foreground">· {e.count}</span></span>
+                      <span className="font-medium">{formatCurrency(e.amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
+        </>
+      )}
+
+      <p className="mt-6 text-xs text-muted-foreground">
+        {billing.data?.length ?? 0} billing records saved so far. Generating again adds new records.
+      </p>
     </AppLayout>
   );
 }

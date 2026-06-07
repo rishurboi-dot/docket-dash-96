@@ -10,6 +10,7 @@ import type {
   RateCard,
   Zone,
 } from "./billing";
+import type { City, Quotation, QuotationRate } from "./billing";
 
 /* ----------------------------- Companies ----------------------------- */
 export function useCompanies() {
@@ -76,6 +77,112 @@ export function useDeleteZone() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["zones"] }),
+  });
+}
+
+/* ------------------------------- Cities ------------------------------ */
+export function useCities() {
+  return useQuery({
+    queryKey: ["cities"],
+    queryFn: async (): Promise<City[]> => {
+      const { data, error } = await supabase.from("cities").select("*").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useUpsertCity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: TablesInsert<"cities"> & { id?: string }) => {
+      const { error } = await supabase.from("cities").upsert(payload);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cities"] }),
+  });
+}
+
+export function useDeleteCity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("cities").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cities"] }),
+  });
+}
+
+/* ---------------------------- Quotations ----------------------------- */
+export function useQuotations() {
+  return useQuery({
+    queryKey: ["quotations"],
+    queryFn: async (): Promise<Quotation[]> => {
+      const { data, error } = await supabase.from("quotations").select("*");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useQuotationRates() {
+  return useQuery({
+    queryKey: ["quotation_rates"],
+    queryFn: async (): Promise<QuotationRate[]> => {
+      const { data, error } = await supabase
+        .from("quotation_rates")
+        .select("*")
+        .order("min_weight_g");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+/** Ensure a quotation exists for company+mode and return its id. */
+export function useEnsureQuotation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ company_id, mode }: { company_id: string; mode: string }) => {
+      const { data: existing } = await supabase
+        .from("quotations")
+        .select("id")
+        .eq("company_id", company_id)
+        .eq("mode", mode)
+        .maybeSingle();
+      if (existing?.id) return existing.id;
+      const { data, error } = await supabase
+        .from("quotations")
+        .insert({ company_id, mode })
+        .select("id")
+        .single();
+      if (error) throw error;
+      return data.id;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["quotations"] }),
+  });
+}
+
+export function useUpsertQuotationRate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: TablesInsert<"quotation_rates"> & { id?: string }) => {
+      const { error } = await supabase.from("quotation_rates").upsert(payload);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["quotation_rates"] }),
+  });
+}
+
+export function useDeleteQuotationRate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("quotation_rates").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["quotation_rates"] }),
   });
 }
 

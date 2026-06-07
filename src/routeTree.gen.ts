@@ -13,7 +13,7 @@ import { Route as ZonesRouteImport } from './routes/zones'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScanRouteImport } from './routes/scan'
-import { Route as RatesRouteImport } from './routes/rates'
+import { Route as QuotationsRouteImport } from './routes/quotations'
 import { Route as CompaniesRouteImport } from './routes/companies'
 import { Route as BillingRouteImport } from './routes/billing'
 import { Route as IndexRouteImport } from './routes/index'
@@ -38,9 +38,9 @@ const ScanRoute = ScanRouteImport.update({
   path: '/scan',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RatesRoute = RatesRouteImport.update({
-  id: '/rates',
-  path: '/rates',
+const QuotationsRoute = QuotationsRouteImport.update({
+  id: '/quotations',
+  path: '/quotations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompaniesRoute = CompaniesRouteImport.update({
@@ -63,7 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/billing': typeof BillingRoute
   '/companies': typeof CompaniesRoute
-  '/rates': typeof RatesRoute
+  '/quotations': typeof QuotationsRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
@@ -73,7 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/billing': typeof BillingRoute
   '/companies': typeof CompaniesRoute
-  '/rates': typeof RatesRoute
+  '/quotations': typeof QuotationsRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
@@ -84,7 +84,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/billing': typeof BillingRoute
   '/companies': typeof CompaniesRoute
-  '/rates': typeof RatesRoute
+  '/quotations': typeof QuotationsRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
@@ -96,7 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/billing'
     | '/companies'
-    | '/rates'
+    | '/quotations'
     | '/scan'
     | '/sitemap.xml'
     | '/upload'
@@ -106,7 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/billing'
     | '/companies'
-    | '/rates'
+    | '/quotations'
     | '/scan'
     | '/sitemap.xml'
     | '/upload'
@@ -116,7 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/billing'
     | '/companies'
-    | '/rates'
+    | '/quotations'
     | '/scan'
     | '/sitemap.xml'
     | '/upload'
@@ -127,7 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BillingRoute: typeof BillingRoute
   CompaniesRoute: typeof CompaniesRoute
-  RatesRoute: typeof RatesRoute
+  QuotationsRoute: typeof QuotationsRoute
   ScanRoute: typeof ScanRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UploadRoute: typeof UploadRoute
@@ -164,11 +164,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScanRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/rates': {
-      id: '/rates'
-      path: '/rates'
-      fullPath: '/rates'
-      preLoaderRoute: typeof RatesRouteImport
+    '/quotations': {
+      id: '/quotations'
+      path: '/quotations'
+      fullPath: '/quotations'
+      preLoaderRoute: typeof QuotationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/companies': {
@@ -199,7 +199,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BillingRoute: BillingRoute,
   CompaniesRoute: CompaniesRoute,
-  RatesRoute: RatesRoute,
+  QuotationsRoute: QuotationsRoute,
   ScanRoute: ScanRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UploadRoute: UploadRoute,
@@ -208,3 +208,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
