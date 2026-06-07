@@ -9,16 +9,36 @@ export interface ParsedReportRow {
   raw: Record<string, unknown>;
 }
 
-const HEADER_PATTERNS: Record<string, RegExp> = {
-  docket: /docket|awb|consignment|waybill|tracking|pod|lr.?no|shipment/i,
-  weight: /weight|wt\b|chargeable|kgs?\b/i,
-  zone: /zone|sector|region/i,
-  mode: /mode|service|product|courier.?type|^type$/i,
-  destination: /destination|dest|city|to\b|delivery|consignee.?city/i,
+// Ordered candidate patterns — earlier patterns win. This avoids greedy
+// mismatches like "shipmentType" being treated as the docket number.
+const HEADER_PATTERNS: Record<string, RegExp[]> = {
+  docket: [
+    /docket.?no|docket/i,
+    /doc(ument)?.?no/i,
+    /awb|consignment|waybill|c\.?n\.?(note|no)|lr.?no/i,
+    /tracking|pod\b/i,
+  ],
+  // Prefer chargeable/total weight (kg) over a raw weight column (often grams).
+  weight: [
+    /total.?weight|chargeable.?weight|billed.?weight|charge.?wt/i,
+    /kgs?\b/i,
+    /\bweight\b|wt\b/i,
+  ],
+  zone: [/zone|sector|region/i],
+  mode: [/^mode$|\bmode\b/i, /travel.?by/i, /service|product|courier.?type|carrier|^via$/i],
+  destination: [
+    /receiver.?city|consignee.?city|dest(ination)?|^city$|to.?city/i,
+  ],
 };
 
-function matchColumn(headers: string[], pattern: RegExp): number {
-  return headers.findIndex((h) => pattern.test(h ?? ""));
+function matchColumn(headers: string[], patterns: RegExp[]): number {
+  for (const pattern of patterns) {
+    const i = headers.findIndex(
+      (h) => pattern.test(h ?? "") && !/volumetric/i.test(h ?? ""),
+    );
+    if (i >= 0) return i;
+  }
+  return -1;
 }
 
 function toNumber(v: unknown): number | null {

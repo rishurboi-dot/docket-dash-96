@@ -1,0 +1,12 @@
+---
+name: Courier report Excel column mapping
+description: Real courier report column names and how they map to docket/weight/mode/zone fields
+type: feature
+---
+Uploaded courier reports use these source columns (no literal docket/zone headers):
+- documentNo -> docket_number (the real AWB; NOT shipmentType which is DOX/NON-DOX)
+- travelBy -> mode (Surface/Air/Express)
+- totalWeight -> weight in kg (raw weight column is grams; prefer totalWeight)
+- receiverCity -> destination
+- No zone column exists. Zone is optional in rate matching; rates fall back to mode+weight match.
+Parser detection in src/lib/excel.ts uses ordered candidate patterns to avoid greedy mismatches.

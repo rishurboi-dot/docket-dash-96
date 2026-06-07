@@ -98,22 +98,26 @@ function BillingPage() {
         (z) => z.code.toLowerCase() === (row.zone_code ?? "").toLowerCase(),
       );
       base.zone_id = zone?.id ?? null;
-      base.zone_name = zone?.name ?? row.zone_code ?? "—";
+      base.zone_name = zone?.name ?? row.zone_code ?? row.destination ?? "—";
       if (!company) {
         base.reason = "Docket has no company assigned";
         return base;
       }
-      if (!zone) {
-        base.reason = `Unknown zone "${row.zone_code ?? ""}"`;
-        return base;
-      }
       const card = findRateCard(
         rateList.filter((c) => c.company_id === company.id),
-        { zoneId: zone.id, mode: row.mode, weight: row.weight },
+        { zoneId: zone?.id ?? null, mode: row.mode, weight: row.weight },
       );
       if (!card) {
-        base.reason = "No rate card for this zone/mode";
+        base.reason = zone
+          ? "No rate card for this zone/mode"
+          : "No rate card for this mode/weight";
         return base;
+      }
+      // If zone was unknown, adopt the matched card's zone for reporting.
+      if (!zone && card.zone_id) {
+        const cardZone = zoneList.find((z) => z.id === card.zone_id);
+        base.zone_id = card.zone_id;
+        base.zone_name = cardZone?.name ?? base.zone_name;
       }
       base.rate_card_id = card.id;
       base.charge = calcCharge(card, row.weight);
