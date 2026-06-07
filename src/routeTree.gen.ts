@@ -14,6 +14,7 @@ import { Route as UploadRouteImport } from './routes/upload'
 import { Route as ScanRouteImport } from './routes/scan'
 import { Route as RatesRouteImport } from './routes/rates'
 import { Route as CompaniesRouteImport } from './routes/companies'
+import { Route as BillingRouteImport } from './routes/billing'
 import { Route as IndexRouteImport } from './routes/index'
 
 const ZonesRoute = ZonesRouteImport.update({
@@ -41,6 +42,11 @@ const CompaniesRoute = CompaniesRouteImport.update({
   path: '/companies',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BillingRoute = BillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -49,6 +55,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/billing': typeof BillingRoute
   '/companies': typeof CompaniesRoute
   '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/billing': typeof BillingRoute
   '/companies': typeof CompaniesRoute
   '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/billing': typeof BillingRoute
   '/companies': typeof CompaniesRoute
   '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
@@ -74,12 +83,27 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/companies' | '/rates' | '/scan' | '/upload' | '/zones'
+  fullPaths:
+    | '/'
+    | '/billing'
+    | '/companies'
+    | '/rates'
+    | '/scan'
+    | '/upload'
+    | '/zones'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/companies' | '/rates' | '/scan' | '/upload' | '/zones'
+  to:
+    | '/'
+    | '/billing'
+    | '/companies'
+    | '/rates'
+    | '/scan'
+    | '/upload'
+    | '/zones'
   id:
     | '__root__'
     | '/'
+    | '/billing'
     | '/companies'
     | '/rates'
     | '/scan'
@@ -89,6 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BillingRoute: typeof BillingRoute
   CompaniesRoute: typeof CompaniesRoute
   RatesRoute: typeof RatesRoute
   ScanRoute: typeof ScanRoute
@@ -133,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompaniesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/billing': {
+      id: '/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof BillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -145,6 +177,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BillingRoute: BillingRoute,
   CompaniesRoute: CompaniesRoute,
   RatesRoute: RatesRoute,
   ScanRoute: ScanRoute,
