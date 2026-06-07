@@ -5,7 +5,7 @@ import {
   MapPin,
   ReceiptText,
   ScanLine,
-  Tags,
+  FileSpreadsheet,
   Truck,
   Upload,
 } from "lucide-react";
@@ -17,10 +17,10 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/scan", label: "Scan Dockets", icon: ScanLine },
   { to: "/upload", label: "Upload Reports", icon: Upload },
-  { to: "/billing", label: "Billing", icon: ReceiptText },
+  { to: "/billing", label: "Generate Billing", icon: ReceiptText },
   { to: "/companies", label: "Companies", icon: Building2 },
-  { to: "/zones", label: "Zones", icon: MapPin },
-  { to: "/rates", label: "Rate Cards", icon: Tags },
+  { to: "/zones", label: "Zones & Cities", icon: MapPin },
+  { to: "/quotations", label: "Quotations", icon: FileSpreadsheet },
 ] as const;
 
 export function AppLayout({
