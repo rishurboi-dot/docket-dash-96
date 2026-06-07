@@ -225,9 +225,16 @@ function BillingPage() {
             <Button variant="outline" onClick={exportPreview} disabled={!preview.length}>
               <Download className="mr-1 h-4 w-4" /> Export preview
             </Button>
+            <Button
+              variant="ghost"
+              className="ml-auto"
+              onClick={() => setShowUnmatched((v) => !v)}
+            >
+              {showUnmatched ? "Hide unmatched" : `Show unmatched (${preview.length - matched.length})`}
+            </Button>
           </div>
           <Card style={{ boxShadow: "var(--shadow-card)" }}>
-            {preview.length ? (
+            {visiblePreview.length ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -241,7 +248,7 @@ function BillingPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {preview.map((p) => (
+                  {visiblePreview.map((p) => (
                     <TableRow key={p.docket_number}>
                       <TableCell className="font-mono text-sm">{p.docket_number}</TableCell>
                       <TableCell>{p.company_name}</TableCell>
@@ -266,7 +273,9 @@ function BillingPage() {
               </Table>
             ) : (
               <div className="px-5 py-16 text-center text-sm text-muted-foreground">
-                Scan dockets and upload a report to see the billing preview.
+                {preview.length
+                  ? "No matched dockets yet. Toggle “Show unmatched” to review what didn't match."
+                  : "Scan dockets and upload a report to see the billing preview."}
               </div>
             )}
           </Card>
