@@ -34,8 +34,11 @@ export interface MatchInput {
 export function findRateCard(cards: RateCard[], input: MatchInput): RateCard | null {
   const mode = normalizeMode(input.mode);
   const weight = input.weight ?? 0;
+  // When the report has no zone, ignore the zone filter and match on mode + weight.
   const sameZoneMode = cards.filter(
-    (c) => c.zone_id === input.zoneId && normalizeMode(c.mode) === mode,
+    (c) =>
+      (input.zoneId == null || c.zone_id === input.zoneId) &&
+      normalizeMode(c.mode) === mode,
   );
   const slab = sameZoneMode.find(
     (c) => weight >= Number(c.weight_from) && weight <= Number(c.weight_to),
