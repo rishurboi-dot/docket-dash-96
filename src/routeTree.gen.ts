@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ZonesRouteImport } from './routes/zones'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as ScanRouteImport } from './routes/scan'
 import { Route as CompaniesRouteImport } from './routes/companies'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ZonesRoute = ZonesRouteImport.update({
+  id: '/zones',
+  path: '/zones',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/companies': typeof CompaniesRoute
   '/scan': typeof ScanRoute
   '/upload': typeof UploadRoute
+  '/zones': typeof ZonesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/companies': typeof CompaniesRoute
   '/scan': typeof ScanRoute
   '/upload': typeof UploadRoute
+  '/zones': typeof ZonesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/companies': typeof CompaniesRoute
   '/scan': typeof ScanRoute
   '/upload': typeof UploadRoute
+  '/zones': typeof ZonesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/companies' | '/scan' | '/upload'
+  fullPaths: '/' | '/companies' | '/scan' | '/upload' | '/zones'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/companies' | '/scan' | '/upload'
-  id: '__root__' | '/' | '/companies' | '/scan' | '/upload'
+  to: '/' | '/companies' | '/scan' | '/upload' | '/zones'
+  id: '__root__' | '/' | '/companies' | '/scan' | '/upload' | '/zones'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,10 +76,18 @@ export interface RootRouteChildren {
   CompaniesRoute: typeof CompaniesRoute
   ScanRoute: typeof ScanRoute
   UploadRoute: typeof UploadRoute
+  ZonesRoute: typeof ZonesRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/zones': {
+      id: '/zones'
+      path: '/zones'
+      fullPath: '/zones'
+      preLoaderRoute: typeof ZonesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/upload': {
       id: '/upload'
       path: '/upload'
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   CompaniesRoute: CompaniesRoute,
   ScanRoute: ScanRoute,
   UploadRoute: UploadRoute,
+  ZonesRoute: ZonesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
