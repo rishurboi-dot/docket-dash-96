@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ZonesRouteImport } from './routes/zones'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScanRouteImport } from './routes/scan'
 import { Route as RatesRouteImport } from './routes/rates'
 import { Route as CompaniesRouteImport } from './routes/companies'
@@ -25,6 +26,11 @@ const ZonesRoute = ZonesRouteImport.update({
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ScanRoute = ScanRouteImport.update({
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/companies': typeof CompaniesRoute
   '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
   '/zones': typeof ZonesRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/companies': typeof CompaniesRoute
   '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
   '/zones': typeof ZonesRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/companies': typeof CompaniesRoute
   '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
   '/zones': typeof ZonesRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/rates'
     | '/scan'
+    | '/sitemap.xml'
     | '/upload'
     | '/zones'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/rates'
     | '/scan'
+    | '/sitemap.xml'
     | '/upload'
     | '/zones'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/rates'
     | '/scan'
+    | '/sitemap.xml'
     | '/upload'
     | '/zones'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   CompaniesRoute: typeof CompaniesRoute
   RatesRoute: typeof RatesRoute
   ScanRoute: typeof ScanRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UploadRoute: typeof UploadRoute
   ZonesRoute: typeof ZonesRoute
 }
@@ -135,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof UploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/scan': {
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   CompaniesRoute: CompaniesRoute,
   RatesRoute: RatesRoute,
   ScanRoute: ScanRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   UploadRoute: UploadRoute,
   ZonesRoute: ZonesRoute,
 }
