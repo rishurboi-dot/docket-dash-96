@@ -129,6 +129,8 @@ function BillingPage() {
 
   const matched = preview.filter((p) => p.matched);
   const total = matched.reduce((s, p) => s + p.charge, 0);
+  const [showUnmatched, setShowUnmatched] = useState(false);
+  const visiblePreview = showUnmatched ? preview : matched;
 
   const generate = async () => {
     if (!matched.length) {
