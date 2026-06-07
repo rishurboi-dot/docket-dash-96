@@ -213,7 +213,7 @@ function BillingPage() {
 
       <Tabs defaultValue="preview">
         <TabsList>
-          <TabsTrigger value="preview">Preview ({preview.length})</TabsTrigger>
+          <TabsTrigger value="preview">Preview ({visiblePreview.length})</TabsTrigger>
           <TabsTrigger value="saved">Saved reports ({billing.data?.length ?? 0})</TabsTrigger>
         </TabsList>
 
