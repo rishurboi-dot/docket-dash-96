@@ -13,7 +13,6 @@ import { Route as ZonesRouteImport } from './routes/zones'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScanRouteImport } from './routes/scan'
-import { Route as RatesRouteImport } from './routes/rates'
 import { Route as QuotationsRouteImport } from './routes/quotations'
 import { Route as CompaniesRouteImport } from './routes/companies'
 import { Route as BillingRouteImport } from './routes/billing'
@@ -37,11 +36,6 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const ScanRoute = ScanRouteImport.update({
   id: '/scan',
   path: '/scan',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RatesRoute = RatesRouteImport.update({
-  id: '/rates',
-  path: '/rates',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuotationsRoute = QuotationsRouteImport.update({
@@ -70,7 +64,6 @@ export interface FileRoutesByFullPath {
   '/billing': typeof BillingRoute
   '/companies': typeof CompaniesRoute
   '/quotations': typeof QuotationsRoute
-  '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
@@ -81,7 +74,6 @@ export interface FileRoutesByTo {
   '/billing': typeof BillingRoute
   '/companies': typeof CompaniesRoute
   '/quotations': typeof QuotationsRoute
-  '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
@@ -93,7 +85,6 @@ export interface FileRoutesById {
   '/billing': typeof BillingRoute
   '/companies': typeof CompaniesRoute
   '/quotations': typeof QuotationsRoute
-  '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/upload': typeof UploadRoute
@@ -106,7 +97,6 @@ export interface FileRouteTypes {
     | '/billing'
     | '/companies'
     | '/quotations'
-    | '/rates'
     | '/scan'
     | '/sitemap.xml'
     | '/upload'
@@ -117,7 +107,6 @@ export interface FileRouteTypes {
     | '/billing'
     | '/companies'
     | '/quotations'
-    | '/rates'
     | '/scan'
     | '/sitemap.xml'
     | '/upload'
@@ -128,7 +117,6 @@ export interface FileRouteTypes {
     | '/billing'
     | '/companies'
     | '/quotations'
-    | '/rates'
     | '/scan'
     | '/sitemap.xml'
     | '/upload'
@@ -140,7 +128,6 @@ export interface RootRouteChildren {
   BillingRoute: typeof BillingRoute
   CompaniesRoute: typeof CompaniesRoute
   QuotationsRoute: typeof QuotationsRoute
-  RatesRoute: typeof RatesRoute
   ScanRoute: typeof ScanRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UploadRoute: typeof UploadRoute
@@ -175,13 +162,6 @@ declare module '@tanstack/react-router' {
       path: '/scan'
       fullPath: '/scan'
       preLoaderRoute: typeof ScanRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/rates': {
-      id: '/rates'
-      path: '/rates'
-      fullPath: '/rates'
-      preLoaderRoute: typeof RatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quotations': {
@@ -220,7 +200,6 @@ const rootRouteChildren: RootRouteChildren = {
   BillingRoute: BillingRoute,
   CompaniesRoute: CompaniesRoute,
   QuotationsRoute: QuotationsRoute,
-  RatesRoute: RatesRoute,
   ScanRoute: ScanRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UploadRoute: UploadRoute,
@@ -229,3 +208,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
