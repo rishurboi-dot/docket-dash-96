@@ -14,6 +14,7 @@ import { Route as UploadRouteImport } from './routes/upload'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScanRouteImport } from './routes/scan'
 import { Route as RatesRouteImport } from './routes/rates'
+import { Route as QuotationsRouteImport } from './routes/quotations'
 import { Route as CompaniesRouteImport } from './routes/companies'
 import { Route as BillingRouteImport } from './routes/billing'
 import { Route as IndexRouteImport } from './routes/index'
@@ -43,6 +44,11 @@ const RatesRoute = RatesRouteImport.update({
   path: '/rates',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QuotationsRoute = QuotationsRouteImport.update({
+  id: '/quotations',
+  path: '/quotations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CompaniesRoute = CompaniesRouteImport.update({
   id: '/companies',
   path: '/companies',
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/billing': typeof BillingRoute
   '/companies': typeof CompaniesRoute
+  '/quotations': typeof QuotationsRoute
   '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/billing': typeof BillingRoute
   '/companies': typeof CompaniesRoute
+  '/quotations': typeof QuotationsRoute
   '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/billing': typeof BillingRoute
   '/companies': typeof CompaniesRoute
+  '/quotations': typeof QuotationsRoute
   '/rates': typeof RatesRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/billing'
     | '/companies'
+    | '/quotations'
     | '/rates'
     | '/scan'
     | '/sitemap.xml'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/billing'
     | '/companies'
+    | '/quotations'
     | '/rates'
     | '/scan'
     | '/sitemap.xml'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/billing'
     | '/companies'
+    | '/quotations'
     | '/rates'
     | '/scan'
     | '/sitemap.xml'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BillingRoute: typeof BillingRoute
   CompaniesRoute: typeof CompaniesRoute
+  QuotationsRoute: typeof QuotationsRoute
   RatesRoute: typeof RatesRoute
   ScanRoute: typeof ScanRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -171,6 +184,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RatesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/quotations': {
+      id: '/quotations'
+      path: '/quotations'
+      fullPath: '/quotations'
+      preLoaderRoute: typeof QuotationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/companies': {
       id: '/companies'
       path: '/companies'
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BillingRoute: BillingRoute,
   CompaniesRoute: CompaniesRoute,
+  QuotationsRoute: QuotationsRoute,
   RatesRoute: RatesRoute,
   ScanRoute: ScanRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
@@ -208,3 +229,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
