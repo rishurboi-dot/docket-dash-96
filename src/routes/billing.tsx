@@ -445,60 +445,254 @@ function BillingPage() {
         </Card>
       ) : (
         <>
-          <div className="mb-3 flex flex-wrap gap-2">
-            <Button variant="outline" onClick={exportExcel} disabled={!billRows.length}>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <div className="mr-auto flex gap-1 rounded-md border p-0.5">
+              <Button
+                size="sm"
+                variant={filter === "all" ? "default" : "ghost"}
+                onClick={() => setFilter("all")}
+              >
+                All Records ({mergedRows.length})
+              </Button>
+              <Button
+                size="sm"
+                variant={filter === "marked" ? "default" : "ghost"}
+                onClick={() => setFilter("marked")}
+              >
+                <Flag className="mr-1 h-3.5 w-3.5" /> Marked Only ({markedCount})
+              </Button>
+            </div>
+            <Button variant="outline" onClick={exportExcel} disabled={!visibleRows.length}>
               <Download className="mr-1 h-4 w-4" /> Export Excel
             </Button>
-            <Button variant="outline" onClick={exportPdf} disabled={!billRows.length}>
+            <Button variant="outline" onClick={exportPdf} disabled={!visibleRows.length}>
               <FileText className="mr-1 h-4 w-4" /> Export PDF
             </Button>
           </div>
 
           <Card style={{ boxShadow: "var(--shadow-card)" }}>
-            {billRows.length ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">S.No</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Docket</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Place</TableHead>
-                    <TableHead>Zone</TableHead>
-                    <TableHead className="text-right">Weight</TableHead>
-                    <TableHead>Mode</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {billRows.map((r, i) => (
-                    <TableRow key={r.docket_number}>
-                      <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                      <TableCell>{r.date ? new Date(r.date).toLocaleDateString() : "—"}</TableCell>
-                      <TableCell className="font-mono text-sm">{r.docket_number}</TableCell>
-                      <TableCell className="max-w-[160px] truncate">{r.name || "—"}</TableCell>
-                      <TableCell>{r.place || "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{r.zone_name}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">{r.weight} kg</TableCell>
-                      <TableCell>{r.mode}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        {r.available ? (
-                          formatCurrency(r.amount)
-                        ) : (
-                          <Badge variant="outline" className="border-destructive/40 text-destructive">
-                            NOT AVAILABLE
-                          </Badge>
-                        )}
-                      </TableCell>
+            {visibleRows.length ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10"></TableHead>
+                      <TableHead className="w-12">S.No</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Docket</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Place</TableHead>
+                      <TableHead>Zone</TableHead>
+                      <TableHead className="text-right">Weight</TableHead>
+                      <TableHead>Mode</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Notes</TableHead>
+                      <TableHead className="w-24 text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {visibleRows.map((r, i) => {
+                      const editing = editingDocket === r.docket_number && draft;
+                      return (
+                        <TableRow
+                          key={r.docket_number}
+                          className={
+                            r.marked
+                              ? "bg-amber-50 hover:bg-amber-100/70"
+                              : r.edited
+                                ? "bg-primary/5"
+                                : undefined
+                          }
+                        >
+                          <TableCell>
+                            <button
+                              type="button"
+                              onClick={() => toggleMark(r)}
+                              title={r.marked ? "Unmark" : "Mark for review"}
+                              className="text-muted-foreground transition-colors hover:text-amber-500"
+                            >
+                              <Flag
+                                className={`h-4 w-4 ${r.marked ? "fill-amber-400 text-amber-500" : ""}`}
+                              />
+                            </button>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {i + 1}
+                            {r.edited && (
+                              <Badge variant="outline" className="ml-1 border-primary/40 px-1 py-0 text-[10px] text-primary">
+                                edited
+                              </Badge>
+                            )}
+                          </TableCell>
+                          {editing ? (
+                            <>
+                              <TableCell>
+                                <Input
+                                  type="date"
+                                  className="h-8 w-36"
+                                  value={draft.date}
+                                  onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+                                />
+                              </TableCell>
+                              <TableCell className="font-mono text-sm">{r.docket_number}</TableCell>
+                              <TableCell>
+                                <Input
+                                  className="h-8 w-32"
+                                  value={draft.name}
+                                  onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  className="h-8 w-28"
+                                  value={draft.place}
+                                  onChange={(e) => setDraft({ ...draft, place: e.target.value })}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Select
+                                  value={draft.zone_id ?? ""}
+                                  onValueChange={(v) => setDraft({ ...draft, zone_id: v })}
+                                >
+                                  <SelectTrigger className="h-8 w-28">
+                                    <SelectValue placeholder="Zone" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {zones.data?.map((z) => (
+                                      <SelectItem key={z.id} value={z.id}>
+                                        {z.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Input
+                                  type="number"
+                                  className="h-8 w-20 text-right"
+                                  value={draft.weight}
+                                  onChange={(e) => setDraft({ ...draft, weight: e.target.value })}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Select
+                                  value={draft.mode}
+                                  onValueChange={(v) => setDraft({ ...draft, mode: v })}
+                                >
+                                  <SelectTrigger className="h-8 w-28">
+                                    <SelectValue placeholder="Mode" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {MODES.map((m) => (
+                                      <SelectItem key={m} value={m}>
+                                        {m}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Input
+                                  type="number"
+                                  className="h-8 w-24 text-right"
+                                  value={draft.amount}
+                                  onChange={(e) => setDraft({ ...draft, amount: e.target.value })}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Textarea
+                                  rows={1}
+                                  className="min-h-8 w-40"
+                                  placeholder="Add notes…"
+                                  value={draft.notes}
+                                  onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+                                />
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Button
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => saveEdit(r)}
+                                    disabled={upsertEdit.isPending}
+                                    title="Save"
+                                  >
+                                    <Save className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8"
+                                    onClick={cancelEdit}
+                                    title="Cancel"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </>
+                          ) : (
+                            <>
+                              <TableCell
+                                className="cursor-pointer"
+                                onClick={() => startEdit(r)}
+                              >
+                                {r.date ? new Date(r.date).toLocaleDateString() : "—"}
+                              </TableCell>
+                              <TableCell className="cursor-pointer font-mono text-sm" onClick={() => startEdit(r)}>
+                                {r.docket_number}
+                              </TableCell>
+                              <TableCell className="max-w-[160px] cursor-pointer truncate" onClick={() => startEdit(r)}>
+                                {r.name || "—"}
+                              </TableCell>
+                              <TableCell className="cursor-pointer" onClick={() => startEdit(r)}>
+                                {r.place || "—"}
+                              </TableCell>
+                              <TableCell className="cursor-pointer" onClick={() => startEdit(r)}>
+                                <Badge variant="secondary">{r.zone_name}</Badge>
+                              </TableCell>
+                              <TableCell className="cursor-pointer text-right" onClick={() => startEdit(r)}>
+                                {r.weight} kg
+                              </TableCell>
+                              <TableCell className="cursor-pointer" onClick={() => startEdit(r)}>
+                                {r.mode}
+                              </TableCell>
+                              <TableCell className="cursor-pointer text-right font-medium" onClick={() => startEdit(r)}>
+                                {r.available ? (
+                                  formatCurrency(r.amount)
+                                ) : (
+                                  <Badge variant="outline" className="border-destructive/40 text-destructive">
+                                    NOT AVAILABLE
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="max-w-[180px] cursor-pointer text-sm text-muted-foreground" onClick={() => startEdit(r)}>
+                                {r.notes ? <span className="line-clamp-2">{r.notes}</span> : "—"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8"
+                                  onClick={() => startEdit(r)}
+                                  title="Edit row"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </>
+                          )}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <div className="px-5 py-16 text-center text-sm text-muted-foreground">
-                No matched shipments for this selection. Scan dockets and upload the courier report first.
+                {filter === "marked"
+                  ? "No rows marked for review yet. Use the flag icon to mark rows."
+                  : "No matched shipments for this selection. Scan dockets and upload the courier report first."}
               </div>
             )}
           </Card>
