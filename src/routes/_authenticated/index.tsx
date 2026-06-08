@@ -119,7 +119,7 @@ function Index() {
 
   return (
     <AppLayout title="Dashboard" description="Overview of your courier billing operations.">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Shipments Today" value={shipmentsToday} icon={Package} />
         <StatCard label="Weight Today" value={`${weightToday.toFixed(1)} kg`} icon={Scale} />
         <StatCard label="Billing Today" value={formatCurrency(billingToday)} icon={ReceiptText} />
