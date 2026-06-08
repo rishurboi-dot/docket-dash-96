@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Building2,
   LayoutDashboard,
@@ -8,9 +8,12 @@ import {
   FileSpreadsheet,
   Truck,
   Upload,
+  LogOut,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -35,6 +38,15 @@ export function AppLayout({
   children: ReactNode;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  async function handleSignOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -69,6 +81,13 @@ export function AppLayout({
             );
           })}
         </nav>
+        <button
+          onClick={handleSignOut}
+          className="mx-3 mb-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </button>
         <div className="px-6 py-4 text-xs text-sidebar-foreground/40">v1.0 · Lovable Cloud</div>
       </aside>
 
