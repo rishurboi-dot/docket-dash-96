@@ -25,7 +25,7 @@ import {
 import { useCompanies, useDeleteCompany, useUpsertCompany } from "@/lib/queries";
 import type { Company } from "@/lib/billing";
 
-export const Route = createFileRoute("/companies")({
+export const Route = createFileRoute("/_authenticated/companies")({
   head: () => ({
     meta: [
       { title: "Companies — SwiftBill" },

@@ -62,7 +62,7 @@ import {
   useZones,
 } from "@/lib/queries";
 
-export const Route = createFileRoute("/billing")({
+export const Route = createFileRoute("/_authenticated/billing")({
   head: () => ({
     meta: [
       { title: "Generate Billing — SwiftBill" },

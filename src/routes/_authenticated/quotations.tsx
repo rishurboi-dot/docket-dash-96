@@ -42,7 +42,7 @@ import {
 } from "@/lib/queries";
 import { MODES, RATE_UNITS, slabLabel, type RateUnit } from "@/lib/billing";
 
-export const Route = createFileRoute("/quotations")({
+export const Route = createFileRoute("/_authenticated/quotations")({
   head: () => ({
     meta: [
       { title: "Quotations — SwiftBill" },

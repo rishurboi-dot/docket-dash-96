@@ -40,7 +40,7 @@ import {
 } from "@/lib/queries";
 import type { Zone } from "@/lib/billing";
 
-export const Route = createFileRoute("/zones")({
+export const Route = createFileRoute("/_authenticated/zones")({
   head: () => ({
     meta: [
       { title: "Zones & Cities — SwiftBill" },

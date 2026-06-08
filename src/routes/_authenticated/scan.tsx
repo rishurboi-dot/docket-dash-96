@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useAddDocket, useCompanies, useDeleteDocket, useDockets } from "@/lib/queries";
 
-export const Route = createFileRoute("/scan")({
+export const Route = createFileRoute("/_authenticated/scan")({
   head: () => ({
     meta: [
       { title: "Scan Dockets — SwiftBill" },
