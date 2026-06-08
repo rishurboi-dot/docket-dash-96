@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      billing_edits: {
+        Row: {
+          amount: number | null
+          company_id: string
+          created_at: string
+          date: string | null
+          docket_number: string
+          edited_fields: Json
+          id: string
+          marked: boolean
+          mode: string | null
+          name: string | null
+          notes: string | null
+          place: string | null
+          updated_at: string
+          weight: number | null
+          zone_id: string | null
+          zone_name: string | null
+        }
+        Insert: {
+          amount?: number | null
+          company_id: string
+          created_at?: string
+          date?: string | null
+          docket_number: string
+          edited_fields?: Json
+          id?: string
+          marked?: boolean
+          mode?: string | null
+          name?: string | null
+          notes?: string | null
+          place?: string | null
+          updated_at?: string
+          weight?: number | null
+          zone_id?: string | null
+          zone_name?: string | null
+        }
+        Update: {
+          amount?: number | null
+          company_id?: string
+          created_at?: string
+          date?: string | null
+          docket_number?: string
+          edited_fields?: Json
+          id?: string
+          marked?: boolean
+          mode?: string | null
+          name?: string | null
+          notes?: string | null
+          place?: string | null
+          updated_at?: string
+          weight?: number | null
+          zone_id?: string | null
+          zone_name?: string | null
+        }
+        Relationships: []
+      }
       billing_records: {
         Row: {
           charge: number
