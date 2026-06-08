@@ -492,7 +492,7 @@ function BillingPage() {
                   </TableHeader>
                   <TableBody>
                     {visibleRows.map((r, i) => {
-                      const editing = editingDocket === r.docket_number && draft;
+                      const d = editingDocket === r.docket_number ? draft : null;
                       return (
                         <TableRow
                           key={r.docket_number}
