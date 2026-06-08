@@ -13,13 +13,18 @@ export function StatCard({
   hint?: string;
 }) {
   return (
-    <Card className="flex items-center gap-4 p-5" style={{ boxShadow: "var(--shadow-card)" }}>
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-        <Icon className="h-6 w-6" />
+    <Card
+      className="flex min-h-[6.5rem] items-center gap-3 p-4 sm:p-5"
+      style={{ boxShadow: "var(--shadow-card)" }}
+    >
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <Icon className="h-5 w-5" />
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="truncate text-2xl font-bold text-foreground">{value}</p>
+        <p className="font-bold leading-tight text-foreground whitespace-nowrap text-[clamp(0.95rem,1.1vw,1.5rem)]">
+          {value}
+        </p>
         {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       </div>
     </Card>
