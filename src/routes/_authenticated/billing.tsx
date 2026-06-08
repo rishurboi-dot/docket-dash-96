@@ -150,6 +150,8 @@ function BillingPage() {
 
     const out: BillRow[] = [];
     for (const d of dockets.data ?? []) {
+      // Only process dockets assigned to the selected company during scanning.
+      if (d.company_id !== companyId) continue;
       const row = rowByDocket.get(d.docket_number.trim());
       if (!row) continue; // unmatched -> ignored
       const bookingRaw = rawField(row.raw, "bookingDate");
