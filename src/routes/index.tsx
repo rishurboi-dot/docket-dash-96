@@ -39,13 +39,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SwiftBill — Courier Billing Dashboard" },
+      { title: "Prime Billing Software — Courier Billing Dashboard" },
       {
         name: "description",
         content:
           "Scan dockets, upload courier reports, match shipments and generate accurate billing based on zone, weight, mode and company quotations.",
       },
-      { property: "og:title", content: "SwiftBill — Courier Billing" },
+      { property: "og:title", content: "Prime Billing Software — Courier Billing" },
       {
         property: "og:description",
         content: "Automated courier billing from scanned dockets and courier Excel reports.",
