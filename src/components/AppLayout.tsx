@@ -44,7 +44,7 @@ export function AppLayout({
             <Truck className="h-5 w-5" />
           </div>
           <div className="leading-tight">
-            <p className="font-display text-base font-bold">SwiftBill</p>
+            <p className="font-display text-base font-bold">Prime Billing Software</p>
             <p className="text-xs text-sidebar-foreground/60">Courier Billing</p>
           </div>
         </div>
