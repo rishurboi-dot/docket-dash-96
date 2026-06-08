@@ -342,3 +342,28 @@ export function useClearBilling() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["billing_records"] }),
   });
 }
+
+/* ---------------------------- Billing edits ------------------------- */
+export function useBillingEdits() {
+  return useQuery({
+    queryKey: ["billing_edits"],
+    queryFn: async (): Promise<Tables<"billing_edits">[]> => {
+      const { data, error } = await supabase.from("billing_edits").select("*");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useUpsertBillingEdit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: TablesInsert<"billing_edits">) => {
+      const { error } = await supabase
+        .from("billing_edits")
+        .upsert(payload, { onConflict: "company_id,docket_number" });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["billing_edits"] }),
+  });
+}
