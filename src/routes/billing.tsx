@@ -530,29 +530,29 @@ function BillingPage() {
                                 <Input
                                   type="date"
                                   className="h-8 w-36"
-                                  value={draft.date}
-                                  onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+                                  value={d.date}
+                                  onChange={(e) => setDraft({ ...d, date: e.target.value })}
                                 />
                               </TableCell>
                               <TableCell className="font-mono text-sm">{r.docket_number}</TableCell>
                               <TableCell>
                                 <Input
                                   className="h-8 w-32"
-                                  value={draft.name}
-                                  onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                                  value={d.name}
+                                  onChange={(e) => setDraft({ ...d, name: e.target.value })}
                                 />
                               </TableCell>
                               <TableCell>
                                 <Input
                                   className="h-8 w-28"
-                                  value={draft.place}
-                                  onChange={(e) => setDraft({ ...draft, place: e.target.value })}
+                                  value={d.place}
+                                  onChange={(e) => setDraft({ ...d, place: e.target.value })}
                                 />
                               </TableCell>
                               <TableCell>
                                 <Select
-                                  value={draft.zone_id ?? ""}
-                                  onValueChange={(v) => setDraft({ ...draft, zone_id: v })}
+                                  value={d.zone_id ?? ""}
+                                  onValueChange={(v) => setDraft({ ...d, zone_id: v })}
                                 >
                                   <SelectTrigger className="h-8 w-28">
                                     <SelectValue placeholder="Zone" />
@@ -570,14 +570,14 @@ function BillingPage() {
                                 <Input
                                   type="number"
                                   className="h-8 w-20 text-right"
-                                  value={draft.weight}
-                                  onChange={(e) => setDraft({ ...draft, weight: e.target.value })}
+                                  value={d.weight}
+                                  onChange={(e) => setDraft({ ...d, weight: e.target.value })}
                                 />
                               </TableCell>
                               <TableCell>
                                 <Select
-                                  value={draft.mode}
-                                  onValueChange={(v) => setDraft({ ...draft, mode: v })}
+                                  value={d.mode}
+                                  onValueChange={(v) => setDraft({ ...d, mode: v })}
                                 >
                                   <SelectTrigger className="h-8 w-28">
                                     <SelectValue placeholder="Mode" />
@@ -595,8 +595,8 @@ function BillingPage() {
                                 <Input
                                   type="number"
                                   className="h-8 w-24 text-right"
-                                  value={draft.amount}
-                                  onChange={(e) => setDraft({ ...draft, amount: e.target.value })}
+                                  value={d.amount}
+                                  onChange={(e) => setDraft({ ...d, amount: e.target.value })}
                                 />
                               </TableCell>
                               <TableCell>
@@ -604,8 +604,8 @@ function BillingPage() {
                                   rows={1}
                                   className="min-h-8 w-40"
                                   placeholder="Add notes…"
-                                  value={draft.notes}
-                                  onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+                                  value={d.notes}
+                                  onChange={(e) => setDraft({ ...d, notes: e.target.value })}
                                 />
                               </TableCell>
                               <TableCell className="text-right">
