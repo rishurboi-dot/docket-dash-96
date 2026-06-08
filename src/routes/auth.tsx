@@ -25,8 +25,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -38,27 +37,18 @@ function AuthPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error("Please enter your email and password.");
+    if (!username || !password) {
+      toast.error("Please enter your username and password.");
       return;
     }
     setLoading(true);
     try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast.success("Account created. Signing you in…");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      }
+      const email = `${username.trim().toLowerCase()}@prime.local`;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw new Error("Incorrect username or password.");
       navigate({ to: "/" });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong.";
+      const message = err instanceof Error ? err.message : "Incorrect username or password.";
       toast.error(message);
     } finally {
       setLoading(false);
@@ -73,21 +63,20 @@ function AuthPage() {
             <Truck className="h-6 w-6" />
           </div>
           <h1 className="mt-4 text-2xl font-bold">Prime Billing Software</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {mode === "signin" ? "Sign in to continue" : "Create your staff account"}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Sign in to continue</p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="username">Username</Label>
             <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
+              id="username"
+              type="text"
+              autoComplete="username"
+              autoCapitalize="none"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter your username"
               className="h-12 text-base"
             />
           </div>
@@ -96,7 +85,7 @@ function AuthPage() {
             <Input
               id="password"
               type="password"
-              autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
@@ -104,29 +93,9 @@ function AuthPage() {
             />
           </div>
           <Button type="submit" disabled={loading} className="h-12 w-full text-base font-semibold">
-            {loading ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+            {loading ? "Please wait…" : "Sign in"}
           </Button>
         </form>
-
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          {mode === "signin" ? (
-            <button
-              type="button"
-              className="font-medium text-primary hover:underline"
-              onClick={() => setMode("signup")}
-            >
-              Need an account? Create one
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="font-medium text-primary hover:underline"
-              onClick={() => setMode("signin")}
-            >
-              Already have an account? Sign in
-            </button>
-          )}
-        </div>
       </Card>
       <Toaster position="top-right" richColors />
     </div>
