@@ -12,7 +12,7 @@ import { useDeleteReport, useReports } from "@/lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Json } from "@/integrations/supabase/types";
 
-export const Route = createFileRoute("/upload")({
+export const Route = createFileRoute("/_authenticated/upload")({
   head: () => ({
     meta: [
       { title: "Upload Courier Reports — SwiftBill" },
