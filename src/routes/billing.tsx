@@ -5,10 +5,13 @@ import {
   CheckCircle2,
   Download,
   FileText,
+  Flag,
+  Pencil,
   Package,
   Receipt,
   Save,
   Scale,
+  X,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -18,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { StatCard } from "@/components/StatCard";
 import {
   Select,
@@ -41,10 +45,12 @@ import {
   calcSlabCharge,
   detectZone,
   formatCurrency,
+  MODES,
   normalizeMode,
 } from "@/lib/billing";
 import {
   useBillingRecords,
+  useBillingEdits,
   useCities,
   useCompanies,
   useDockets,
@@ -52,6 +58,7 @@ import {
   useQuotations,
   useReportRows,
   useSaveBilling,
+  useUpsertBillingEdit,
   useZones,
 } from "@/lib/queries";
 
@@ -78,6 +85,23 @@ interface BillRow {
   available: boolean;
 }
 
+interface MergedRow extends BillRow {
+  marked: boolean;
+  notes: string;
+  edited: boolean;
+}
+
+interface EditDraft {
+  date: string;
+  name: string;
+  place: string;
+  zone_id: string | null;
+  mode: string;
+  weight: string;
+  amount: string;
+  notes: string;
+}
+
 function rawField(raw: unknown, key: string): string {
   if (raw && typeof raw === "object" && key in (raw as Record<string, unknown>)) {
     const v = (raw as Record<string, unknown>)[key];
@@ -95,13 +119,18 @@ function BillingPage() {
   const quotations = useQuotations();
   const rates = useQuotationRates();
   const billing = useBillingRecords();
+  const edits = useBillingEdits();
   const saveBilling = useSaveBilling();
+  const upsertEdit = useUpsertBillingEdit();
   const qc = useQueryClient();
 
   const [companyId, setCompanyId] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [saving, setSaving] = useState(false);
+  const [filter, setFilter] = useState<"all" | "marked">("all");
+  const [editingDocket, setEditingDocket] = useState<string | null>(null);
+  const [draft, setDraft] = useState<EditDraft | null>(null);
 
   const company = companies.data?.find((c) => c.id === companyId) ?? null;
 
@@ -153,9 +182,46 @@ function BillingPage() {
     return out;
   }, [companyId, dockets.data, reportRows.data, zones.data, cities.data, rates.data, quotations.data, from, to]);
 
-  const billable = billRows.filter((r) => r.available);
-  const totalWeight = billRows.reduce((s, r) => s + r.weight, 0);
+  // Merge persisted edits / marks / notes onto computed rows.
+  const mergedRows = useMemo<MergedRow[]>(() => {
+    const editByDocket = new Map(
+      (edits.data ?? [])
+        .filter((e) => e.company_id === companyId)
+        .map((e) => [e.docket_number.trim(), e]),
+    );
+    return billRows.map((base) => {
+      const e = editByDocket.get(base.docket_number.trim());
+      if (!e) return { ...base, marked: false, notes: "", edited: false };
+      const fields = Array.isArray(e.edited_fields) ? (e.edited_fields as string[]) : [];
+      const has = (f: string) => fields.includes(f);
+      const amount = has("amount") && e.amount != null ? Number(e.amount) : base.amount;
+      return {
+        ...base,
+        date: has("date") ? e.date ?? null : base.date,
+        name: has("name") ? e.name ?? "" : base.name,
+        place: has("place") ? e.place ?? "" : base.place,
+        zone_id: has("zone") ? e.zone_id ?? base.zone_id : base.zone_id,
+        zone_name: has("zone") ? e.zone_name ?? base.zone_name : base.zone_name,
+        mode: has("mode") ? e.mode ?? base.mode : base.mode,
+        weight: has("weight") && e.weight != null ? Number(e.weight) : base.weight,
+        amount,
+        available: has("amount") ? true : base.available,
+        marked: e.marked,
+        notes: e.notes ?? "",
+        edited: fields.length > 0,
+      };
+    });
+  }, [billRows, edits.data, companyId]);
+
+  const visibleRows = useMemo(
+    () => (filter === "marked" ? mergedRows.filter((r) => r.marked) : mergedRows),
+    [mergedRows, filter],
+  );
+
+  const billable = mergedRows.filter((r) => r.available);
+  const totalWeight = mergedRows.reduce((s, r) => s + r.weight, 0);
   const totalAmount = billable.reduce((s, r) => s + r.amount, 0);
+  const markedCount = mergedRows.filter((r) => r.marked).length;
 
   const zoneBreakdown = useMemo(() => {
     const m = new Map<string, { count: number; amount: number }>();
@@ -178,6 +244,96 @@ function BillingPage() {
     }
     return [...m.entries()];
   }, [billable]);
+
+  const baseByDocket = useMemo(
+    () => new Map(billRows.map((r) => [r.docket_number, r])),
+    [billRows],
+  );
+
+  const startEdit = (r: MergedRow) => {
+    setEditingDocket(r.docket_number);
+    setDraft({
+      date: r.date ? r.date.slice(0, 10) : "",
+      name: r.name,
+      place: r.place,
+      zone_id: r.zone_id,
+      mode: r.mode,
+      weight: String(r.weight),
+      amount: String(r.amount),
+      notes: r.notes,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingDocket(null);
+    setDraft(null);
+  };
+
+  const saveEdit = async (r: MergedRow) => {
+    if (!draft) return;
+    const base = baseByDocket.get(r.docket_number);
+    if (!base) return;
+    const zoneList = zones.data ?? [];
+    const newZone = zoneList.find((z) => z.id === draft.zone_id) ?? null;
+    const edited: string[] = [];
+    const baseDate = base.date ? base.date.slice(0, 10) : "";
+    if (draft.date !== baseDate) edited.push("date");
+    if (draft.name !== base.name) edited.push("name");
+    if (draft.place !== base.place) edited.push("place");
+    if ((draft.zone_id ?? null) !== (base.zone_id ?? null)) edited.push("zone");
+    if (draft.mode !== base.mode) edited.push("mode");
+    if (Number(draft.weight) !== base.weight) edited.push("weight");
+    if (Number(draft.amount) !== base.amount) edited.push("amount");
+    try {
+      await upsertEdit.mutateAsync({
+        company_id: companyId,
+        docket_number: r.docket_number,
+        date: draft.date || null,
+        name: draft.name,
+        place: draft.place,
+        zone_id: draft.zone_id,
+        zone_name: newZone?.name ?? r.zone_name,
+        mode: draft.mode,
+        weight: draft.weight === "" ? null : Number(draft.weight),
+        amount: draft.amount === "" ? null : Number(draft.amount),
+        notes: draft.notes || null,
+        marked: r.marked,
+        edited_fields: edited,
+      });
+      toast.success("Changes saved");
+      cancelEdit();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const toggleMark = async (r: MergedRow) => {
+    const base = baseByDocket.get(r.docket_number);
+    try {
+      await upsertEdit.mutateAsync({
+        company_id: companyId,
+        docket_number: r.docket_number,
+        marked: !r.marked,
+        notes: r.notes || null,
+        date: r.edited ? r.date : base?.date ?? null,
+        name: r.name,
+        place: r.place,
+        zone_id: r.zone_id,
+        zone_name: r.zone_name,
+        mode: r.mode,
+        weight: r.weight,
+        amount: r.amount,
+        edited_fields: r.edited
+          ? (edits.data?.find(
+              (e) => e.company_id === companyId && e.docket_number === r.docket_number,
+            )?.edited_fields as string[]) ?? []
+          : [],
+      });
+      toast.success(r.marked ? "Removed review mark" : "Marked for review");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
 
   const generate = async () => {
     if (!companyId) return toast.error("Select a company first.");
@@ -209,7 +365,7 @@ function BillingPage() {
 
   const exportExcel = () => {
     exportRowsToExcel(
-      billRows.map((r, i) => ({
+      visibleRows.map((r, i) => ({
         "S.No": i + 1,
         Date: r.date ? new Date(r.date).toLocaleDateString() : "",
         Docket: r.docket_number,
@@ -219,6 +375,8 @@ function BillingPage() {
         "Weight (kg)": r.weight,
         Mode: r.mode,
         Amount: r.available ? r.amount : "NOT AVAILABLE",
+        "Review Status": r.marked ? "Marked" : "",
+        Notes: r.notes,
       })),
       `billing-${company?.name ?? "company"}-${new Date().toISOString().slice(0, 10)}.xlsx`,
     );
@@ -228,8 +386,8 @@ function BillingPage() {
     exportBillingPdf({
       companyName: company?.name ?? "—",
       dateRange: from || to ? `${from || "…"} to ${to || "…"}` : "All dates",
-      rows: billRows,
-      totalShipments: billRows.length,
+      rows: visibleRows,
+      totalShipments: visibleRows.length,
       totalWeight,
       totalAmount,
     });
