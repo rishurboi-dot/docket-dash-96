@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedZonesRouteImport } from './routes/_authenticated/zones'
 import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
@@ -23,43 +24,48 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
-  id: '/_authenticated/',
-  path: '/',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedZonesRoute = AuthenticatedZonesRouteImport.update({
-  id: '/_authenticated/zones',
+  id: '/zones',
   path: '/zones',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedUploadRoute = AuthenticatedUploadRouteImport.update({
-  id: '/_authenticated/upload',
+  id: '/upload',
   path: '/upload',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedScanRoute = AuthenticatedScanRouteImport.update({
-  id: '/_authenticated/scan',
+  id: '/scan',
   path: '/scan',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedQuotationsRoute = AuthenticatedQuotationsRouteImport.update({
-  id: '/_authenticated/quotations',
+  id: '/quotations',
   path: '/quotations',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCompaniesRoute = AuthenticatedCompaniesRouteImport.update({
-  id: '/_authenticated/companies',
+  id: '/companies',
   path: '/companies',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
-  id: '/_authenticated/billing',
+  id: '/billing',
   path: '/billing',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof AuthenticatedIndexRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/companies': typeof AuthenticatedCompaniesRoute
@@ -67,7 +73,6 @@ export interface FileRoutesByFullPath {
   '/scan': typeof AuthenticatedScanRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/zones': typeof AuthenticatedZonesRoute
-  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -81,6 +86,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/companies': typeof AuthenticatedCompaniesRoute
@@ -93,6 +99,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/sitemap.xml'
     | '/billing'
     | '/companies'
@@ -100,7 +107,6 @@ export interface FileRouteTypes {
     | '/scan'
     | '/upload'
     | '/zones'
-    | '/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/sitemap.xml'
@@ -113,6 +119,7 @@ export interface FileRouteTypes {
     | '/'
   id:
     | '__root__'
+    | '/_authenticated'
     | '/sitemap.xml'
     | '/_authenticated/billing'
     | '/_authenticated/companies'
@@ -124,14 +131,8 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
-  AuthenticatedCompaniesRoute: typeof AuthenticatedCompaniesRoute
-  AuthenticatedQuotationsRoute: typeof AuthenticatedQuotationsRoute
-  AuthenticatedScanRoute: typeof AuthenticatedScanRoute
-  AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
-  AuthenticatedZonesRoute: typeof AuthenticatedZonesRoute
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -143,60 +144,76 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/': {
       id: '/_authenticated/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/zones': {
       id: '/_authenticated/zones'
       path: '/zones'
       fullPath: '/zones'
       preLoaderRoute: typeof AuthenticatedZonesRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/upload': {
       id: '/_authenticated/upload'
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof AuthenticatedUploadRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/scan': {
       id: '/_authenticated/scan'
       path: '/scan'
       fullPath: '/scan'
       preLoaderRoute: typeof AuthenticatedScanRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/quotations': {
       id: '/_authenticated/quotations'
       path: '/quotations'
       fullPath: '/quotations'
       preLoaderRoute: typeof AuthenticatedQuotationsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/companies': {
       id: '/_authenticated/companies'
       path: '/companies'
       fullPath: '/companies'
       preLoaderRoute: typeof AuthenticatedCompaniesRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/billing': {
       id: '/_authenticated/billing'
       path: '/billing'
       fullPath: '/billing'
       preLoaderRoute: typeof AuthenticatedBillingRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-const rootRouteChildren: RootRouteChildren = {
-  SitemapDotxmlRoute: SitemapDotxmlRoute,
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
+  AuthenticatedCompaniesRoute: typeof AuthenticatedCompaniesRoute
+  AuthenticatedQuotationsRoute: typeof AuthenticatedQuotationsRoute
+  AuthenticatedScanRoute: typeof AuthenticatedScanRoute
+  AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
+  AuthenticatedZonesRoute: typeof AuthenticatedZonesRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedCompaniesRoute: AuthenticatedCompaniesRoute,
   AuthenticatedQuotationsRoute: AuthenticatedQuotationsRoute,
@@ -204,6 +221,14 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedUploadRoute: AuthenticatedUploadRoute,
   AuthenticatedZonesRoute: AuthenticatedZonesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
