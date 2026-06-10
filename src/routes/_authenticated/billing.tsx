@@ -716,6 +716,7 @@ function BillingPage() {
                                 {r.notes ? <span className="line-clamp-2">{r.notes}</span> : "—"}
                               </TableCell>
                               <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
                                 <Button
                                   size="icon"
                                   variant="ghost"
@@ -757,6 +758,7 @@ function BillingPage() {
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
                                 </AlertDialog>
+                                </div>
                               </TableCell>
                             </>
                           )}
