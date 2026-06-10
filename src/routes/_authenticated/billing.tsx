@@ -225,6 +225,22 @@ function BillingPage() {
   const totalAmount = billable.reduce((s, r) => s + r.amount, 0);
   const markedCount = mergedRows.filter((r) => r.marked).length;
 
+  // Dockets that already have a billing record for the selected company.
+  const alreadyBilled = useMemo(() => {
+    const set = new Set<string>();
+    for (const b of billing.data ?? []) {
+      if (b.company_id !== companyId) continue;
+      set.add(b.docket_number.trim());
+    }
+    return set;
+  }, [billing.data, companyId]);
+
+  // Only bill matched shipments that haven't been billed yet (idempotent generate).
+  const toBill = useMemo(
+    () => billable.filter((r) => !alreadyBilled.has(r.docket_number.trim())),
+    [billable, alreadyBilled],
+  );
+
   const zoneBreakdown = useMemo(() => {
     const m = new Map<string, { count: number; amount: number }>();
     for (const r of billable) {
