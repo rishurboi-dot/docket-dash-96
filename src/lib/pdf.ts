@@ -53,14 +53,21 @@ export function exportBillingPdf(opts: {
     styles: { fontSize: 8, cellPadding: 2 },
     headStyles: { fillColor: navy, textColor: 255 },
     alternateRowStyles: { fillColor: [245, 247, 250] },
+    foot: [
+      [
+        `Total: ${opts.totalShipments}`,
+        "",
+        "",
+        "",
+        "",
+        "",
+        `${opts.totalWeight.toFixed(2)} kg`,
+        "",
+        opts.totalAmount.toFixed(2),
+      ],
+    ],
+    footStyles: { fillColor: navy, textColor: 255, fontStyle: "bold" },
   });
-
-  const endY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
-  doc.setFontSize(10);
-  doc.setTextColor(...navy);
-  doc.text(`Total Shipments: ${opts.totalShipments}`, 14, endY);
-  doc.text(`Total Weight: ${opts.totalWeight.toFixed(2)} kg`, 14, endY + 6);
-  doc.text(`Total Amount: ${opts.totalAmount.toFixed(2)}`, 14, endY + 12);
 
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
