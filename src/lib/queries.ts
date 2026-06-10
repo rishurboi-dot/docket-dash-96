@@ -343,6 +343,40 @@ export function useClearBilling() {
   });
 }
 
+/**
+ * Fully delete a shipment record by docket number: removes it from the scanned
+ * dockets, generated billing records, billing edits, and the uploaded courier
+ * report rows. Dashboard and all other views refresh via query invalidation.
+ */
+export function useDeleteBillingDocket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      docketNumber,
+      companyId,
+    }: {
+      docketNumber: string;
+      companyId: string;
+    }) => {
+      const dn = docketNumber.trim();
+      const results = await Promise.all([
+        supabase.from("billing_records").delete().eq("docket_number", dn).eq("company_id", companyId),
+        supabase.from("billing_edits").delete().eq("docket_number", dn).eq("company_id", companyId),
+        supabase.from("dockets").delete().eq("docket_number", dn).eq("company_id", companyId),
+        supabase.from("courier_report_rows").delete().eq("docket_number", dn),
+      ]);
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["billing_records"] });
+      qc.invalidateQueries({ queryKey: ["billing_edits"] });
+      qc.invalidateQueries({ queryKey: ["dockets"] });
+      qc.invalidateQueries({ queryKey: ["report_rows"] });
+    },
+  });
+}
+
 /* ---------------------------- Billing edits ------------------------- */
 export function useBillingEdits() {
   return useQuery({

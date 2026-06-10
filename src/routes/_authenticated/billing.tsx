@@ -11,6 +11,7 @@ import {
   Receipt,
   Save,
   Scale,
+  Trash2,
   X,
   XCircle,
 } from "lucide-react";
@@ -38,6 +39,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { exportRowsToExcel } from "@/lib/excel";
 import { exportBillingPdf } from "@/lib/pdf";
@@ -53,6 +65,7 @@ import {
   useBillingEdits,
   useCities,
   useCompanies,
+  useDeleteBillingDocket,
   useDockets,
   useQuotationRates,
   useQuotations,
@@ -122,6 +135,7 @@ function BillingPage() {
   const edits = useBillingEdits();
   const saveBilling = useSaveBilling();
   const upsertEdit = useUpsertBillingEdit();
+  const deleteDocket = useDeleteBillingDocket();
   const qc = useQueryClient();
 
   const [companyId, setCompanyId] = useState("");
@@ -348,6 +362,16 @@ function BillingPage() {
           : [],
       });
       toast.success(r.marked ? "Removed review mark" : "Marked for review");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const deleteRecord = async (docketNumber: string) => {
+    if (!companyId) return;
+    try {
+      await deleteDocket.mutateAsync({ docketNumber, companyId });
+      toast.success(`Deleted record ${docketNumber}`);
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -692,6 +716,7 @@ function BillingPage() {
                                 {r.notes ? <span className="line-clamp-2">{r.notes}</span> : "—"}
                               </TableCell>
                               <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
                                 <Button
                                   size="icon"
                                   variant="ghost"
@@ -701,6 +726,39 @@ function BillingPage() {
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8 text-destructive hover:text-destructive"
+                                      title="Delete record"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete this record?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Docket {r.docket_number} will be permanently removed from
+                                        scanned dockets, generated billing, edits, and the uploaded
+                                        report. Dashboard totals will update automatically. This
+                                        cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        onClick={() => deleteRecord(r.docket_number)}
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                                </div>
                               </TableCell>
                             </>
                           )}
