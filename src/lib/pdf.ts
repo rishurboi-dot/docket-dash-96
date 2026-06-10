@@ -38,7 +38,7 @@ export function exportBillingPdf(opts: {
 
   autoTable(doc, {
     startY: 45,
-    head: [["S.No", "Date", "Docket", "Name", "Place", "Zone", "Wt(kg)", "Mode", "Amount", "Review", "Notes"]],
+    head: [["S.No", "Date", "Docket", "Name", "Place", "Zone", "Wt(kg)", "Mode", "Amount"]],
     body: opts.rows.map((r, i) => [
       String(i + 1),
       r.date ? new Date(r.date).toLocaleDateString() : "-",
@@ -49,8 +49,6 @@ export function exportBillingPdf(opts: {
       String(r.weight),
       r.mode,
       r.available ? r.amount.toFixed(2) : "N/A",
-      r.marked ? "Marked" : "-",
-      r.notes || "-",
     ]),
     styles: { fontSize: 8, cellPadding: 2 },
     headStyles: { fillColor: navy, textColor: 255 },
