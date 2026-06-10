@@ -11,6 +11,7 @@ import {
   Receipt,
   Save,
   Scale,
+  Trash2,
   X,
   XCircle,
 } from "lucide-react";
@@ -38,6 +39,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { exportRowsToExcel } from "@/lib/excel";
 import { exportBillingPdf } from "@/lib/pdf";
@@ -53,6 +65,7 @@ import {
   useBillingEdits,
   useCities,
   useCompanies,
+  useDeleteBillingDocket,
   useDockets,
   useQuotationRates,
   useQuotations,
