@@ -445,8 +445,9 @@ function BillingPage() {
             <Input type="date" className="mt-1" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
           <div className="flex items-end">
-            <Button className="w-full" size="lg" onClick={generate} disabled={saving || !billable.length}>
-              <Save className="mr-1 h-4 w-4" /> Generate Billing
+            <Button className="w-full" size="lg" onClick={generate} disabled={saving || !toBill.length}>
+              <Save className="mr-1 h-4 w-4" />
+              {billable.length && !toBill.length ? "Already Billed" : `Generate Billing${toBill.length ? ` (${toBill.length})` : ""}`}
             </Button>
           </div>
         </div>
