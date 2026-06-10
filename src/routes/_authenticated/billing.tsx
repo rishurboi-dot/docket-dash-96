@@ -225,6 +225,22 @@ function BillingPage() {
   const totalAmount = billable.reduce((s, r) => s + r.amount, 0);
   const markedCount = mergedRows.filter((r) => r.marked).length;
 
+  // Dockets that already have a billing record for the selected company.
+  const alreadyBilled = useMemo(() => {
+    const set = new Set<string>();
+    for (const b of billing.data ?? []) {
+      if (b.company_id !== companyId) continue;
+      set.add(b.docket_number.trim());
+    }
+    return set;
+  }, [billing.data, companyId]);
+
+  // Only bill matched shipments that haven't been billed yet (idempotent generate).
+  const toBill = useMemo(
+    () => billable.filter((r) => !alreadyBilled.has(r.docket_number.trim())),
+    [billable, alreadyBilled],
+  );
+
   const zoneBreakdown = useMemo(() => {
     const m = new Map<string, { count: number; amount: number }>();
     for (const r of billable) {
@@ -340,10 +356,13 @@ function BillingPage() {
   const generate = async () => {
     if (!companyId) return toast.error("Select a company first.");
     if (!billable.length) return toast.error("No billable matched shipments.");
+    if (!toBill.length) {
+      return toast.info("All matched shipments are already billed. Nothing new to generate.");
+    }
     setSaving(true);
     try {
       await saveBilling.mutateAsync(
-        billable.map((r) => ({
+        toBill.map((r) => ({
           docket_number: r.docket_number,
           company_id: companyId,
           zone_id: r.zone_id,
@@ -355,9 +374,9 @@ function BillingPage() {
       await supabase
         .from("dockets")
         .update({ status: "billed" })
-        .in("docket_number", billable.map((r) => r.docket_number));
+        .in("docket_number", toBill.map((r) => r.docket_number));
       qc.invalidateQueries({ queryKey: ["dockets"] });
-      toast.success(`Billing generated for ${billable.length} shipments`);
+      toast.success(`Billing generated for ${toBill.length} shipments`);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -426,8 +445,9 @@ function BillingPage() {
             <Input type="date" className="mt-1" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
           <div className="flex items-end">
-            <Button className="w-full" size="lg" onClick={generate} disabled={saving || !billable.length}>
-              <Save className="mr-1 h-4 w-4" /> Generate Billing
+            <Button className="w-full" size="lg" onClick={generate} disabled={saving || !toBill.length}>
+              <Save className="mr-1 h-4 w-4" />
+              {billable.length && !toBill.length ? "Already Billed" : `Generate Billing${toBill.length ? ` (${toBill.length})` : ""}`}
             </Button>
           </div>
         </div>
