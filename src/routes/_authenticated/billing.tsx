@@ -135,6 +135,7 @@ function BillingPage() {
   const edits = useBillingEdits();
   const saveBilling = useSaveBilling();
   const upsertEdit = useUpsertBillingEdit();
+  const deleteDocket = useDeleteBillingDocket();
   const qc = useQueryClient();
 
   const [companyId, setCompanyId] = useState("");
