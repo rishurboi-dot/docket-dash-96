@@ -356,10 +356,13 @@ function BillingPage() {
   const generate = async () => {
     if (!companyId) return toast.error("Select a company first.");
     if (!billable.length) return toast.error("No billable matched shipments.");
+    if (!toBill.length) {
+      return toast.info("All matched shipments are already billed. Nothing new to generate.");
+    }
     setSaving(true);
     try {
       await saveBilling.mutateAsync(
-        billable.map((r) => ({
+        toBill.map((r) => ({
           docket_number: r.docket_number,
           company_id: companyId,
           zone_id: r.zone_id,
@@ -371,9 +374,9 @@ function BillingPage() {
       await supabase
         .from("dockets")
         .update({ status: "billed" })
-        .in("docket_number", billable.map((r) => r.docket_number));
+        .in("docket_number", toBill.map((r) => r.docket_number));
       qc.invalidateQueries({ queryKey: ["dockets"] });
-      toast.success(`Billing generated for ${billable.length} shipments`);
+      toast.success(`Billing generated for ${toBill.length} shipments`);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
