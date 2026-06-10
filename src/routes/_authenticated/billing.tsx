@@ -367,6 +367,16 @@ function BillingPage() {
     }
   };
 
+  const deleteRecord = async (docketNumber: string) => {
+    if (!companyId) return;
+    try {
+      await deleteDocket.mutateAsync({ docketNumber, companyId });
+      toast.success(`Deleted record ${docketNumber}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
   const generate = async () => {
     if (!companyId) return toast.error("Select a company first.");
     if (!billable.length) return toast.error("No billable matched shipments.");
